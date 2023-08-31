@@ -5,7 +5,36 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 import seaborn as sns
 import matplotlib.pyplot as plt
+import requests
 scaler = StandardScaler()
+
+teams = requests.get("https://statsapi.web.nhl.com/api/v1/teams").json()["teams"]
+print("Team Index: \n")
+for team in teams:
+    print(f"ID:{team['id']} Team: {team['name']}")
+
+teamId=input("Enter team ID from above index to display xG of top 5 Scorers: ")
+    
+
+
+
+playerList = list()
+roster = requests.get("https://statsapi.web.nhl.com/api/v1/teams/{}/roster".format(teamId)).json()["roster"]
+players = list()
+for person in roster:
+    stats = requests.get("https://statsapi.web.nhl.com/api/v1/people/{}/stats?stats=statsSingleSeason&season=20222023".format(person["person"]["id"])).json()["stats"]
+    for split in stats:
+        for stat in split["splits"]:
+            if "goals" in stat["stat"]:
+                players.append({"id":person["person"]["id"],"goals":stat["stat"]["goals"]})
+
+sorted_players = sorted(players, key=lambda player: player["goals"], reverse=True)
+top5 = [player["id"] for player in sorted_players[0:5]]
+
+for id in top5:
+    person = requests.get("https://statsapi.web.nhl.com/api/v1/people/{}".format(id)).json()["people"]
+    for info in person:
+        playerList.append(info["fullName"])
 
 shots2016 = pd.read_csv("shots_2016.csv")
 shots2017 = pd.read_csv("shots_2017.csv")
@@ -16,7 +45,6 @@ shots2021 = pd.read_csv("shots_2021.csv")
 trainingData = pd.concat([shots2016,shots2017,shots2018,shots2019,shots2020,shots2021])
 testData = pd.read_csv("shots_2022.csv")
 
-playerList = ["Auston Matthews","John Tavares","William Nylander","Mitchell Marner","Calle Jarnkrok","Ryan Reaves","Morgan Rielly","John Klingberg","Tyler Bertuzzi","Max Domi"]
 predictions_countList=list()
 actual_countList=list()
 moneyPuckxGList = list()
@@ -73,19 +101,11 @@ plt.scatter(playerList, moneyPuckxGList, color='green', label='Money Puck xGoal 
 # Add labels and title
 plt.xlabel('Player')
 plt.ylabel('Goal Count')
-plt.title('Scatter Plot of Player Goals and xGoals (2022-2023 Regualr and Post Season)')
+plt.title('Scatter Plot of Player Goals and xGoals (2022-2023 Regular and Post Season)')
 plt.legend()  # Show legend with labels
 
-# Rotate x-axis labels for better visibility
 plt.xticks(rotation=45)
 
-# Show the plot
 plt.tight_layout()
 plt.show()
-
-
-
-
-
-
 
