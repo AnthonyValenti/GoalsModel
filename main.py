@@ -1,12 +1,12 @@
 import numpy as np
 import pandas as pd
-from sklearn import metrics
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-import seaborn as sns
 import matplotlib.pyplot as plt
 import requests
 scaler = StandardScaler()
+
+
 
 teams = requests.get("https://statsapi.web.nhl.com/api/v1/teams").json()["teams"]
 print("Team Index: \n")
@@ -42,18 +42,23 @@ shots2018 = pd.read_csv("shots_2018.csv")
 shots2019 = pd.read_csv("shots_2019.csv")
 shots2020 = pd.read_csv("shots_2020.csv")
 shots2021 = pd.read_csv("shots_2021.csv")
-trainingData = pd.concat([shots2016,shots2017,shots2018,shots2019,shots2020,shots2021])
-testData = pd.read_csv("shots_2022.csv")
 
 predictions_countList=list()
 actual_countList=list()
 moneyPuckxGList = list()
+stattrickxGList = list()
 
 for playerName in playerList:
     trainingData = pd.concat([shots2016,shots2017,shots2018,shots2019,shots2020,shots2021])
     testData = pd.read_csv("shots_2022.csv")
-    moneyPuck = testData[testData["shooterName"] == playerName]
-    moneyPuckxG = round(moneyPuck["xGoal"].sum(),1)
+    moneypuck = pd.read_csv("moneypuck2022.csv")
+    stattrick = pd.read_csv("naturalstattrick2022.csv")
+
+    moneypuck = moneypuck[(moneypuck["name"] == playerName) & (moneypuck["situation"]=="all")]
+    moneyPuckxG = moneypuck["I_F_xGoals"].values[0]
+
+    stattrick = stattrick[stattrick["Player"] == playerName]
+    stattrickxG = stattrick["ixG"]
 
 
     trainingData = trainingData[trainingData["shooterName"] == playerName]
@@ -65,8 +70,7 @@ for playerName in playerList:
     trainingData=pd.get_dummies(trainingData,columns=['shotType','team','location'])
     trainingData=trainingData.drop(['shotType_0','timeLeft'],axis=1,errors='ignore')
 
-
-    testData = testData[testData["shooterName"] == playerName]
+    testData=testData[(testData["shooterName"]==playerName) & (testData["isPlayoffGame"]==0)]
     testData=testData.drop(['teamCode','awayTeamCode','shotID','shooterName','gameOver','game_id','goalieIdForShot','goalieNameForShot','homeTeamCode','playerPositionThatDidEvent'],axis=1,errors='ignore')
     testData=testData.drop(['homeWinProbability','homeTeamWon','id','isPlayoffGame','playerNumThatDidEvent','playerNumThatDidLastEvent'],axis=1,errors='ignore')
     testData=testData.drop(['playoffGame','roadTeamCode','season','shooterLeftRight','shooterPlayerId','wentToOT','wentToShootout','xFroze','xGoal','xPlayContinuedInZone','xPlayContinuedOutsideZone'],axis=1,errors='ignore')
@@ -93,19 +97,55 @@ for playerName in playerList:
     predictions_countList.append(predictions_count)
     actual_countList.append(actual_count)
     moneyPuckxGList.append(moneyPuckxG)
+    stattrickxGList.append(stattrickxG)
 
+plt.figure('Expected Goals Scatter Plot')
 plt.scatter(playerList, predictions_countList, color='red', label='My Model xGoal Count')
 plt.scatter(playerList, actual_countList, color='blue', label='Actual Goal Count')
 plt.scatter(playerList, moneyPuckxGList, color='green', label='Money Puck xGoal Count')
+plt.scatter(playerList, stattrickxGList, color='purple', label='Natural Stat Trick xGoal Count')
+
 
 # Add labels and title
 plt.xlabel('Player')
 plt.ylabel('Goal Count')
-plt.title('Scatter Plot of Player Goals and xGoals (2022-2023 Regular and Post Season)')
+plt.title('Scatter Plot of Player Goals and xGoals (2022-2023 Regular Season)')
 plt.legend()  # Show legend with labels
 
 plt.xticks(rotation=45)
 
 plt.tight_layout()
-plt.show()
 
+
+plt.figure('Model Comparison')
+errorMyModel = np.average([round(abs((p-a)/a)*100,2) for p,a in zip(predictions_countList,actual_countList) ] )
+errorMoneyPuck = np.average([round(abs((p-a)/a)*100,2) for p,a in zip(moneyPuckxGList,actual_countList) ] )
+errorstattrick = np.average([round(abs((p-a)/a)*100,2) for p,a in zip(stattrickxGList,actual_countList) ] )
+
+
+sizes1 = [errorMyModel,100-errorMyModel]
+colors1 = ['grey','red']
+
+sizes2 = [errorMoneyPuck,100-errorMoneyPuck]
+colors2 = ['grey','green']
+
+sizes3 = [errorstattrick,100-errorstattrick]
+colors3 = ['grey','purple']
+
+plt.subplot(1, 3, 1)  
+plt.pie(sizes1,labels=['Percent Error','Accuracy'], colors=colors1, autopct='%1.1f%%', startangle=90)
+plt.axis('equal')  
+plt.title('My Model')
+
+plt.subplot(1, 3, 2)  
+plt.pie(sizes2,labels=['Percent Error','Accuracy'], colors=colors2, autopct='%1.1f%%', startangle=90)
+plt.axis('equal')  
+plt.title('Money Puck Model')
+
+plt.subplot(1, 3, 3)  
+plt.pie(sizes3,labels=['Percent Error','Accuracy'], colors=colors3, autopct='%1.1f%%', startangle=90)
+plt.axis('equal')  
+plt.title('Natural Stat Trick Model')
+
+plt.tight_layout()
+plt.show()
