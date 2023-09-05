@@ -1,18 +1,41 @@
 import numpy as np
 import pandas as pd
-from sklearn import metrics
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
-
-playerList=pd.read_csv('testData.csv')["Player"][0:30].values
-
-
-
-
-
-
+import requests
 scaler = StandardScaler()
+
+
+
+teams = requests.get("https://statsapi.web.nhl.com/api/v1/teams").json()["teams"]
+print("Team Index: \n")
+for team in teams:
+    print(f"ID:{team['id']} Team: {team['name']}")
+
+teamId=input("Enter team ID from above index to display xG of top 5 Scorers: ")
+    
+
+
+
+playerList = list()
+roster = requests.get("https://statsapi.web.nhl.com/api/v1/teams/{}/roster".format(teamId)).json()["roster"]
+players = list()
+for person in roster:
+    stats = requests.get("https://statsapi.web.nhl.com/api/v1/people/{}/stats?stats=statsSingleSeason&season=20222023".format(person["person"]["id"])).json()["stats"]
+    for split in stats:
+        for stat in split["splits"]:
+            if "goals" in stat["stat"]:
+                players.append({"id":person["person"]["id"],"goals":stat["stat"]["goals"]})
+
+sorted_players = sorted(players, key=lambda player: player["goals"], reverse=True)
+top5 = [player["id"] for player in sorted_players[0:5]]
+
+for id in top5:
+    person = requests.get("https://statsapi.web.nhl.com/api/v1/people/{}".format(id)).json()["people"]
+    for info in person:
+        playerList.append(info["fullName"])
+
 shots2016 = pd.read_csv("shots_2016.csv")
 shots2017 = pd.read_csv("shots_2017.csv")
 shots2018 = pd.read_csv("shots_2018.csv")
@@ -25,7 +48,6 @@ actual_countList=list()
 moneyPuckxGList = list()
 stattrickxGList = list()
 
-
 for playerName in playerList:
     trainingData = pd.concat([shots2016,shots2017,shots2018,shots2019,shots2020,shots2021])
     testData = pd.read_csv("shots_2022.csv")
@@ -36,7 +58,7 @@ for playerName in playerList:
     moneyPuckxG = moneypuck["I_F_xGoals"].values[0]
 
     stattrick = stattrick[stattrick["Player"] == playerName]
-    stattrickxG = stattrick["ixG"]
+    stattrickxG = stattrick["ixG"].values[0]
 
 
     trainingData = trainingData[trainingData["shooterName"] == playerName]
@@ -58,6 +80,7 @@ for playerName in playerList:
     testData=testData.drop(['shotType_0'],axis=1,errors='ignore')
     testData = testData.reindex(columns=trainingData.columns)
 
+
     testData.fillna(0,inplace=True)
     trainingData.fillna(0,inplace=True)
     model = LogisticRegression(max_iter=50000)
@@ -75,7 +98,7 @@ for playerName in playerList:
     actual_countList.append(actual_count)
     moneyPuckxGList.append(moneyPuckxG)
     stattrickxGList.append(stattrickxG)
-
+    print(stattrickxG)
 plt.figure('Expected Goals Scatter Plot')
 plt.scatter(playerList, predictions_countList, color='red', label='My Model xGoal Count')
 plt.scatter(playerList, actual_countList, color='blue', label='Actual Goal Count')
@@ -126,4 +149,3 @@ plt.title('Natural Stat Trick Model')
 
 plt.tight_layout()
 plt.show()
-
