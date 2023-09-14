@@ -40,21 +40,23 @@ for playerName in playerList:
 
 
     trainingData = trainingData[trainingData["shooterName"] == playerName]
-    trainingData=trainingData.drop(['teamCode','awayTeamCode','shotID','shooterName','gameOver','game_id','goalieIdForShot','goalieNameForShot','homeTeamCode','playerPositionThatDidEvent'],axis=1,errors='ignore')
+    trainingData=trainingData.drop(['teamCode','awayTeamCode','shotID','shooterName','gameOver','game_id','goalieNameForShot','homeTeamCode'],axis=1,errors='ignore')
     trainingData=trainingData.drop(['homeWinProbability','homeTeamWon','id','isPlayoffGame','playerNumThatDidEvent','playerNumThatDidLastEvent'],axis=1,errors='ignore')
-    trainingData=trainingData.drop(['playoffGame','roadTeamCode','season','shooterLeftRight','shooterPlayerId','wentToOT','wentToShootout','xFroze','xGoal','xPlayContinuedInZone','xPlayContinuedOutsideZone','homeTeamScore'],axis=1,errors='ignore')
-    trainingData=trainingData.drop(['xPlayStopped','xRebound','xShotWasOnGoal','event','lastEventCategory','lastEventTeam','roadTeamScore','shotGoalProbability','shotPlayContinued','penaltyLength','timeBetweenEvents'],axis=1,errors='ignore')
+    trainingData=trainingData.drop(['playoffGame','roadTeamCode','season','shooterPlayerId','wentToOT','wentToShootout','xFroze','xGoal','xPlayContinuedInZone','xPlayContinuedOutsideZone','homeTeamScore'],axis=1,errors='ignore')
+    trainingData=trainingData.drop(['xPlayStopped','xRebound','xShotWasOnGoal','event','roadTeamScore','shotGoalProbability','shotPlayContinued','penaltyLength','timeBetweenEvents'],axis=1,errors='ignore')
+    trainingData=trainingData.drop(['shotPlayContinuedOutsideZone','shotPlayContinuedInZone','shotGeneratedRebound','shotPlayStopped'],axis=1,errors='ignore')
     trainingData.fillna(0,inplace=True)
-    trainingData=pd.get_dummies(trainingData,columns=['shotType','team','location'])
+    trainingData=pd.get_dummies(trainingData,columns=['shotType','team','location','shooterLeftRight','playerPositionThatDidEvent','lastEventCategory','lastEventTeam'])
     trainingData=trainingData.drop(['shotType_0','timeLeft'],axis=1,errors='ignore')
 
     testData=testData[(testData["shooterName"]==playerName) & (testData["isPlayoffGame"]==0)]
-    testData=testData.drop(['teamCode','awayTeamCode','shotID','shooterName','gameOver','game_id','goalieIdForShot','goalieNameForShot','homeTeamCode','playerPositionThatDidEvent'],axis=1,errors='ignore')
+    testData=testData.drop(['teamCode','awayTeamCode','shotID','shooterName','gameOver','game_id','goalieNameForShot','homeTeamCode'],axis=1,errors='ignore')
     testData=testData.drop(['homeWinProbability','homeTeamWon','id','isPlayoffGame','playerNumThatDidEvent','playerNumThatDidLastEvent'],axis=1,errors='ignore')
-    testData=testData.drop(['playoffGame','roadTeamCode','season','shooterLeftRight','shooterPlayerId','wentToOT','wentToShootout','xFroze','xGoal','xPlayContinuedInZone','xPlayContinuedOutsideZone'],axis=1,errors='ignore')
-    testData=testData.drop(['xPlayStopped','xRebound','xShotWasOnGoal','event','homeTeamScore','lastEventCategory','lastEventTeam'],axis=1,errors='ignore')
+    testData=testData.drop(['playoffGame','roadTeamCode','season','shooterPlayerId','wentToOT','wentToShootout','xFroze','xGoal','xPlayContinuedInZone','xPlayContinuedOutsideZone'],axis=1,errors='ignore')
+    testData=testData.drop(['xPlayStopped','xRebound','xShotWasOnGoal','event','homeTeamScore'],axis=1,errors='ignore')
+    testData=testData.drop(['shotPlayContinuedOutsideZone','shotPlayContinuedInZone','shotGeneratedRebound','shotPlayStopped'],axis=1,errors='ignore')
     testData.fillna(0,inplace=True)
-    testData=pd.get_dummies(testData,columns=['shotType','team','location'])
+    testData=pd.get_dummies(testData,columns=['shotType','team','location','shooterLeftRight','playerPositionThatDidEvent','lastEventCategory','lastEventTeam'])
     testData=testData.drop(['shotType_0'],axis=1,errors='ignore')
     testData = testData.reindex(columns=trainingData.columns)
 
