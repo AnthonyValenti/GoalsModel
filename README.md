@@ -10,6 +10,6 @@ This graph dispalys my models predictions for the top 30 goal scorers in the 202
 # Model Comparison
 ![Screenshot 2023-10-16 at 2 47 09 PM](https://github.com/AnthonyValenti/GoalsModel/assets/57304403/282f8e5c-4340-4a9e-9210-84715d90ca3c)
 
-My model was able to more accurately predict goals from the top 30 goals scoeres in the 2022-2023 when compared against the most popular public models.
+My model was able to more accurately predict goals from the top 30 goals scorers in the 2022-2023 when compared against the most popular public models.
 
 
